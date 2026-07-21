@@ -1,0 +1,57 @@
+[project]
+name = "ata-rag-chat-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.115.0",
+    "uvicorn[standard]==0.30.6",
+    "sqlalchemy==2.0.35",
+    "pgvector==0.3.6",
+    "alembic==1.13.3",
+    "psycopg2-binary==2.9.9",
+    "pydantic==2.9.2",
+    "pydantic-settings==2.5.2",
+    "httpx==0.27.2",
+    "beautifulsoup4==4.12.3",
+    "markdownify==0.13.1",
+    "markdown-it-py==3.0.0",
+    "mdit-py-plugins==0.4.2",
+    "tiktoken==0.8.0",
+    "openai>=1.51.0",
+    "apscheduler==3.10.4",
+    "langdetect==1.0.9",
+    "python-dotenv>=1.0.0",
+]
+
+# pdf_to_md (github.com/pbrudny/pdf-to-md) is intentionally NOT listed here:
+# its pyproject.toml declares `tool-logger = { workspace = true }`, a non-dev
+# dependency that only resolves inside its own monorepo's uv workspace, so it
+# cannot currently be installed standalone via `uv add git+...`. Until that's
+# fixed upstream, app/crawler/pdf_handler.py imports it lazily and PDF crawling
+# will fail at runtime with a clear error if it's not separately installed.
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "respx",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+"app/db/migrations/*" = ["E501", "UP"]
