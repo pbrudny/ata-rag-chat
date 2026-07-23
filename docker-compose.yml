@@ -5,8 +5,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-appuser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apppassword}
       POSTGRES_DB: ${POSTGRES_DB:-ata_rag_chat}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,8 +16,6 @@ services:
   backend:
     build:
       context: ./backend
-    ports:
-      - "8000:8000"
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://appuser:apppassword@db:5432/ata_rag_chat}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -65,8 +61,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    ports:
-      - "3000:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -76,8 +70,6 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
-    ports:
-      - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:

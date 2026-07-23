@@ -1,0 +1,17 @@
+# Local development only — auto-loaded by `docker compose up` alongside
+# docker-compose.yml. NOT read by Coolify (which only loads docker-compose.yml
+# via docker_compose_location) — host port binds there conflict with the
+# VPS's existing Traefik proxy and other containers.
+services:
+  db:
+    ports:
+      - "5432:5432"
+  backend:
+    ports:
+      - "8000:8000"
+  frontend:
+    ports:
+      - "3000:3000"
+  nginx:
+    ports:
+      - "80:80"
