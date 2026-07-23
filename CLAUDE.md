@@ -4,9 +4,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Spec only — no implementation exists yet. The only file in this directory is `prd.md`. There are no build, lint, or test commands to run because there is no code. When implementation begins, update this file with the actual commands and architecture notes.
+Implemented — all 7 build phases done (single commit `2678596`). Backend (FastAPI + pipeline), frontend (Next.js), Docker Compose stack, and test suites are in place. See `prd.md` for original requirements.
 
 This directory lives inside the `~/agenty` monorepo — follow the root `~/agenty/CLAUDE.md` rules (scope, secrets handling, `loaded-context/`, `tools/TOOLS.md`) in addition to what's below.
+
+## Commands
+
+**Backend** (`backend/`, Python 3.12+, uv):
+```bash
+cd backend
+uv sync
+uv run alembic upgrade head              # apply DB migrations
+uv run uvicorn app.main:app --reload     # run API (port 8000)
+uv run python -m app.scheduler.main      # run daily crawl scheduler
+uv run pytest                            # unit + integration tests
+uv run ruff check app/ tests/
+uv run ruff format app/ tests/
+```
+
+**Frontend** (`frontend/`, Next.js 14):
+```bash
+cd frontend
+npm install
+npm run dev       # Vite/Next dev server (port 3000)
+npm run build
+npm run test       # Vitest
+npm run lint
+```
+
+**Full stack** (from repo root, requires `.env` — copy from `.env.example`):
+```bash
+docker compose up
+```
+Services: `db` (pgvector/pg16), `backend` (FastAPI, runs migrations then uvicorn), `scheduler` (APScheduler daily crawl), `frontend` (Next.js dev), `nginx` (reverse proxy on port 80).
 
 ## Project Overview
 
@@ -14,7 +44,7 @@ AkademiaTA AI Assistant: a RAG chatbot for https://akademiata.edu.pl that answer
 
 Non-goals for v1: authentication, Moodle integration, student records, administrative workflows.
 
-## Planned Architecture
+## Architecture
 
 Pipeline (per `prd.md`, Architecture section):
 
@@ -23,9 +53,9 @@ Website → Crawler → Content Cleaner → Markdown → Chunking → Embeddings
 PostgreSQL + pgvector → Retrieval → LLM → Chat API → Next.js UI
 ```
 
-Key design points to preserve when implementing:
+Key design points:
 
-- **Crawling (FR-1/FR-12):** Recursive crawl of akademiata.edu.pl, HTML + PDF, change detection for incremental updates, daily re-sync with cleanup of stale content. Firecrawl is the preferred crawler.
+- **Crawling (FR-1/FR-12):** Recursive crawl of akademiata.edu.pl, HTML + PDF, change detection for incremental updates, daily re-sync with cleanup of stale content. Implemented with a custom httpx-based crawler (`app/crawler/httpx_crawler.py`), not Firecrawl — see Tech Stack.
 - **Content processing (FR-2/FR-3):** Strip nav/header/footer/cookie banners, convert to Markdown preserving headings/tables/lists/links, then heading-aware chunking at 700–900 tokens with 100-token overlap.
 - **Metadata (FR-4):** Every chunk carries URL, title, section, language, last-modified, document ID, chunk ID, content hash, and source type — content hash is what drives "regenerate embeddings only on change" (FR-5).
 - **Storage & retrieval (FR-6/FR-10):** PostgreSQL + pgvector, cosine similarity, metadata filtering, incremental indexing. Retrieval flow: question → embedding → vector search → top-K → optional reranker → LLM → answer.
@@ -33,14 +63,14 @@ Key design points to preserve when implementing:
 - **Bilingual:** Must support Polish and English end to end (crawled content, chunk metadata `language` field, and chat responses).
 - **Security:** Sanitize indexed HTML before storage; reject prompt injection attempts in both crawled content and user input.
 
-## Tech Stack (planned)
+## Tech Stack
 
-- Backend: Python, FastAPI, SQLAlchemy
-- Frontend: Next.js, React, Tailwind CSS
-- AI: GPT-5.5 for generation, `text-embedding-3-small` for embeddings
-- Database: PostgreSQL + pgvector
-- Crawler: Firecrawl (preferred)
-- Deployment: Docker Compose
+- Backend: Python 3.12, FastAPI, SQLAlchemy, Alembic, APScheduler
+- Frontend: Next.js 14, React 18, Tailwind CSS
+- AI: GPT-5.5 for generation (`app/services/llm_client.py`), `text-embedding-3-small` for embeddings (`app/embeddings/embedder.py`)
+- Database: PostgreSQL + pgvector (`app/db/`, `app/models/`)
+- Crawler: httpx-based crawler (`app/crawler/httpx_crawler.py`) — not Firecrawl; PDF handling in `app/crawler/pdf_handler.py`
+- Deployment: Docker Compose (`docker-compose.yml`, `nginx.conf`)
 
 ## Non-functional targets
 
