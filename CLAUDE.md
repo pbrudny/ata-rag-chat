@@ -70,7 +70,7 @@ Key design points:
 - AI: GPT-5.5 for generation (`app/services/llm_client.py`), `text-embedding-3-small` for embeddings (`app/embeddings/embedder.py`)
 - Database: PostgreSQL + pgvector (`app/db/`, `app/models/`)
 - Crawler: httpx-based crawler (`app/crawler/httpx_crawler.py`) — not Firecrawl; PDF handling in `app/crawler/pdf_handler.py`
-- Deployment: Docker Compose (`docker-compose.yml`, `nginx.conf`)
+- Deployment: Docker Compose (`docker-compose.yml`, `nginx/Dockerfile` + `nginx/nginx.conf`)
 
 ## Non-functional targets
 
