@@ -9,6 +9,14 @@ services:
   backend:
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    command: sh -c "uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+  scheduler:
+    volumes:
+      - ./backend:/app
+      - /app/.venv
   frontend:
     ports:
       - "3000:3000"
