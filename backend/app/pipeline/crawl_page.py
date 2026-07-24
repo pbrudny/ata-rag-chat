@@ -36,6 +36,10 @@ def process_pdf_page(page: RawPage, downloaded_pdf_path: Path) -> ProcessedPage:
 def _build_processed_page(
     page: RawPage, *, title: str | None, markdown: str, source_type: str
 ) -> ProcessedPage:
+    # Postgres text columns reject NUL bytes outright; PDF text extraction in
+    # particular can leave them in, which crashes the ingest on insert.
+    markdown = markdown.replace("\x00", "")
+    title = title.replace("\x00", "") if title is not None else title
     content_hash = hashlib.sha256(markdown.encode("utf-8")).hexdigest()
     return ProcessedPage(
         url=page.url,
